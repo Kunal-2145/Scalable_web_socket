@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <h1>Web socket demo</h1>
+
+     <div>
+    <input type="text" placeholder="Enter your message here" id="msg-input">
+    <button id="msg-send-button" disabled>Send</button>
+    <span id="status">connecting...</span>
+    <ul id="msg-container"></ul>
+    </div>
+
+    <script>
+        const msg=document.getElementById("msg-input")
+        const msgButton=document.getElementById("msg-send-button")
+        const msgContainer=document.getElementById("msg-container")
+        const status=document.getElementById("status")
+
+
+        // Use the hostname the page was loaded from, so the page also works
+        // from another device on the same network (e.g. a phone on wifi).
+        // "localhost" would point back at the phone itself, not the server.
+        const {hostname,port}=window.location
+        const protocol=window.location.protocol==="https:"?"wss":"ws"
+        const connection=new WebSocket(`${protocol}://${hostname}:${port}`)
+
+        connection.onopen=()=>{
+            status.textContent="connected"
+            msgButton.disabled=false
+        }
+        connection.onclose=()=>{
+            status.textContent="disconnected - refresh to reconnect"
+            msgButton.disabled=true
+        }
+        connection.onerror=()=>{
+            status.textContent="connection error - is the server running?"
+        }
+        connection.onmessage=(message)=>{
+            console.log(`aa gaya`,message.data)
+            const rawData=message.data
+            // the server relays plain text too, so JSON.parse can throw.
+            // Fall back to showing the raw text instead of breaking the page.
+            let text=rawData
+            try{
+                text=JSON.parse(rawData).message ?? rawData
+            }catch(err){
+                text=rawData
+            }
+            const li=document.createElement('li')
+            li.innerText=text
+            msgContainer.append(li)
+        }
+        msgButton.addEventListener("click",(e)=>{
+            const value=msg.value
+            connection.send(JSON.stringify({message:value}))
+        })
+    </script>
+
+</body>
+</html>
